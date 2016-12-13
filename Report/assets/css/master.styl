@@ -1,0 +1,193 @@
+@import '_settings'
+
+normalize-css()
+// base()
+
+// Variables
+pg-width = 8.5in
+pg-height = 11in
+pg-sep = 10px
+margin-horiz = 1in
+margin-vert = 0.8in
+bg-color = #444
+col-rule-color = #ddd
+col-gap = 0.5in
+numbering-color = #888
+fig-padding = 20px
+tab-stop = 0.5in
+
+body
+  background-color: bg-color;
+  font-family: 'Lora', sans-serif
+  font-size: 13px;
+  
+h1,h2,h3,h4,h5,h6
+  font-family: 'Montserrat', sans-serif
+  margin-top: 2rem
+  margin-bottom: 1.5rem
+
+// Layout
+article
+  width: pg-width
+  margin: 0 auto
+  background: white
+  img
+    margin: 0 auto
+    display: block
+    width: 100%
+  .page
+    height: pg-height
+    border-bottom: pg-sep solid bg-color
+    padding: margin-vert margin-horiz
+    position: relative
+  .twocol
+    column-count: 2
+    column-rule: 1px solid col-rule-color
+    column-gap: col-gap
+    column-fill: auto
+    overflow: visible // Just to make it obvious
+  .spancols
+    column-span: all
+    margin: fig-padding 0
+  figure
+    margin: fig-padding 0
+    img
+      width: 100%
+    figcaption
+        margin: 0 tab-stop
+        padding-top: 5px
+
+// Typography
+#title
+  header
+    h1
+      text-align: center
+      font-size: 4rem
+    small
+      font-size: 3rem
+  p.lead
+    text-align: center
+    font-size: 1.75rem
+
+  figure
+    margin: tab-stop 0
+    
+  .summary
+    .lead
+      font-weight: bold
+    margin: 0 tab-stop
+
+p
+  text-align: justify
+  &.indent
+    padding-left: .25in
+  &.lead
+    font-size: 2rem
+  
+h3:before, h4:before
+  color: numbering-color !important
+    
+h5 
+  background-color: #EEE !important
+  padding: 5px 10px
+  margin-top: 20px
+
+.schematic
+  position: absolute;
+  height: 100%;
+  top: 0;
+  left: 0;
+  z-index: 100;
+
+#packet-table
+  tr
+    td
+      font-family: Consolas, monospace
+      &:first-child
+        font-weight: bold
+  
+figcaption
+  text-align: center
+  margin-top: 1rem
+  &:before
+    font-weight: 600
+
+table caption
+  text-align: center
+  color: #333
+  &:before
+    font-weight: 600
+    
+.table>tbody>tr>td
+  vertical-align: middle
+
+ul, ol
+  padding-left: 0.25in
+    
+code
+  background-color: transparent
+  // font-weight: bold
+
+.todo
+  color: #8a6d3b;
+  background-color: #fcf8e3;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  border-color: #faebcc;
+  padding: 5px 10px
+  margin: 10px 0
+  &:before
+    content: "TODO: "
+    font-weight: bold
+    
+// CSS counters for auto numbering
+body
+  counter-reset: section subsection figure table page
+  
+.page:after 
+  counter-increment: page
+  content: counter(page)
+  position: absolute
+  width: 100%
+  text-align: center
+  left: 0
+  bottom: .5in
+  
+h3
+  counter-reset: subsection
+  &:before
+    counter-increment: section
+    content: counter(section, upper-roman) ". "
+    width: .5in
+    display: inline-block
+h4
+  font-family: 'Lora'
+  font-weight: bold
+  border-bottom: 0.5px solid #AAA
+  padding-bottom: 5px
+  // &:before
+  //   counter-increment: subsection
+  //   content: counter(section, upper-roman) "." counter(subsection, upper-latin) " "
+  //   width: .5in
+  //   display: inline-block
+
+figcaption:before
+  counter-increment: figure
+  content: "Figure " counter(figure) ": "
+  
+caption:before
+  counter-increment: table
+  content: "Table " counter(table) ": "
+
+// print styles
+@media print
+    
+  *
+    -webkit-print-color-adjust: exact
+  
+  article .page
+    border-bottom: pg-sep solid transparent
+    overflow: hidden
+    
+  h3:before, h4:before
+    color: numbering-color

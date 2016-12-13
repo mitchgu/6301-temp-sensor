@@ -1,0 +1,12 @@
+Qty,partname,description,lib
+0,"74HC595-R","8 bits serial in // out Shift Register 3 State Out","74xx"
+0,"7SEG_PHYSICAL","","display"
+0,"C","Unpolarized capacitor","device"
+0,"CD4066B","Quad Analog Switches","analog_switches"
+0,"CONN_01X05","Connector, single row, 01x05","conn"
+0,"LM311N","Voltage Comparator","linear"
+0,"LM6132","","temp_sensor-cache"
+0,"MPQ3904","MPQ Series 40 V 200 mA NPN Through Hole Silicon Quad Transistor - TO-116","transistors"
+0,"MPQ3906","MPQ Series 40 V 200 mA PNP Through Hole Silicon Quad Transistor - TO-116","transistors"
+0,"Pmod","Digilent Pmod connector","conn"
+0,"R","Resistor","device"

@@ -1,0 +1,334 @@
+extends layout
+
+block content
+  article
+    #title.page
+      header
+        h1 6.301 Lab 2
+          br
+          small Wideband Amplifier
+        
+        address#authors
+          p.lead
+            | Mitchell Gu
+            br
+            | November 8, 2016
+      
+      :markdown
+        ### Schematic
+
+      figure
+        img(src="/img/sch.png", width=300)
+        figcaption The final amplifier schematic, including resistance and capacitance values and OCT/SCT labels. All resistances are measured values with the available significant figures. The $\SI{1}{\kilo\ohm}$ input resistance and $\SI{10}{\micro\farad}$ load capacitances are not shown.
+
+    .page
+      :markdown
+        ### Project Summary
+        #### Specifications
+      table.table.table-condensed.table-striped
+        tr
+          th Specification
+          th Target
+          th Calculated
+          th Simulated
+          th Measured
+        tr
+          td Midband Gain
+          td $>400$
+          td $924$
+          td $959$
+          td $767$
+        tr
+          td Upper -3dB bandwidth
+          td $\SI{1}{\kilo\hertz}$
+          td $\SI{29.4}{\kilo\hertz}$
+          td $\SI{13.6}{\kilo\hertz}$
+          td $\SI{15.0}{\kilo\hertz}$
+        tr
+          td Lower -3dB bandwidth
+          td $\SI{4}{\mega\hertz}$
+          td $\SI{4.81}{\mega\hertz}$
+          td $\SI{6.8}{\mega\hertz}$
+          td $\SI{8.0}{\mega\hertz}$
+        tr
+          td Output voltage swing
+          td $>\SI{2}{\volt}$pp
+          td $\SI{6}{\volt}$pp max
+          td $\SI{6.54}{\volt}$pp max
+          td $\SI{6.54}{\volt}$pp max
+        tr
+          td Power dissipation
+          td $<\SI{100}{\milli\watt}$
+          td $\SI{60}{\milli\watt}$
+          td $\SI{57.8}{\milli\watt}$
+          td $\SI{57.2}{\milli\watt}$
+      :markdown
+        **Notes:**
+        * All calculated and simulated values incorporated measured resistances and the power supply's slightly less-than-promised 14.6 volts.
+        * Simulation and measurement were done with a 4mVpp input (after attenuation), yielding about 3Vpp output.
+        * The attenuator measured in isolation had flat frequency response and exactly 100:1 attenuation ratio.
+
+      :markdown
+        #### Transistor small-signal parameters
+      table.table.table-condensed.table-striped
+        tr
+          th Parameter
+          th Datasheet
+          th Measured
+        tr
+          td $\beta$
+          td $40-300$
+          td $175$
+        tr
+          td $V_A$
+          td $\SI{25}{\volt}-\SI{1000}{\volt}$
+          td $80$
+        tr
+          td $c_{\pi 0}$ (CJE)
+          td $\SI{4.493}{\pico\farad}$ @ $\SI{1}{\mega\hertz}$
+          td $\SI{4.38}{\pico\farad}$ @ $\SI{100}{\kilo\hertz}$
+        tr
+          td $c_{\mu 0}$ (CJC)
+          td $\SI{3.638}{\pico\farad}$ @ $\SI{1}{\mega\hertz}$
+          td $\SI{3.37}{\pico\farad}$ @ $\SI{100}{\kilo\hertz}$
+        tr
+          td $\psi_c$ (VJC)
+          td $\SI{0.75}{\volt}$ @ $\SI{1}{\mega\hertz}$
+          td $\SI{0.30}{\volt}$ @ $\SI{100}{\kilo\hertz}$
+        tr
+          td $m_c$ (MJC)
+          td $0.3085$ @ $\SI{1}{\mega\hertz}$
+          td $0.200$ @ $\SI{100}{\kilo\hertz}$
+      :markdown
+        #### Spice Model
+        ```
+        .model 2N3904-301 NPN(IS=6.734f VAF=80
+        +  Bf=175 CJC=3.37E-12 MJC=.200 VJC=.30
+        +  CJE=4.38E-12 RB=200 RC=0 RE=0)
+        ```
+          
+    .page.twocol
+      :markdown
+        ### Topology
+
+      p Given the high upper -3dB bandwidth requirement, designing the amplifier around a cascode stage seemed like a natural choice in order to avoid the Miller effect. From some scratch calculations early on, however, I found that it would be diffcult to reach the required gain of 400 with just one cascode stage.
+
+      p For example, the ideal gain a single cascode stage is $$g_m\cdot R_L = \frac{I_c}{\SI{0.025}{\volt}}\cdot R_L \geq 400 \Rightarrow I_c \cdot R_L \geq 10V$$. Assuming the upper BJT's collector voltage can reach about 6V before saturating and taking into account the 2V required output swing, the output voltage bias would have a lower bound of at least 7V. Thus $$\SI{15}{\volt}-I_c \cdot R_L \geq \SI{7}{\volt} \Rightarrow I_c \cdot R_L \leq \SI{8}{\volt}$$. Thus a basic cascode stage couldn't provide enough gain by itself.
+
+      p In retrospect (as I type this), I wonder why I didn't consider using the -15V supply with the +15V supply to have enough leeway to get 400 gain and 2V output swing. The power consumption would have gone up, but I would only need one stage instead of two and there's a lot less places for discrepancies to occur. Another possibility I considered was active loading the cascode stage, but the analysis seemed less straightforward and I was worried that the current mirror equivalent resistance would increase the OCTs and decrease the bandwidth.
+
+      p Instead, I settled on two cascode stages, identical except for their load resistances, which were used to adjust each stage's gain. The second stage's load resistance had to be large enough to support over 2Vpp output swing, so its gain also had to be relatively high. This was less of a concern for the first stage because its output swing does not need to be nearly as high. (more detailed analysis in $\S$V. DC Bias)
+
+      h5 Emitter followers
+
+      p Rather than finding the dominant OCTs gradually and adding emitter followers as necessary to mitigate them, I pre-emptively placed emitter followers in several places after learning which OCTs typically dominate from Prof. Lee's in-class derivations and Lundberg's walk-through. Specifically, I put an emitter follwer at the input of each cascode stage in order to prevent the prior source resistances to factor directly into the cascode's OCT's.
+
+      p I also initially designed for an emitter follower on the output to prevent the $\SI{10}{\pico\farad}$ load capacitance from multiplying into the second stage $R_L$. However, in practice I could never get this last NPN transistor to bias correctly, despite both my theoretical model and LTSpice indicating it would work. I found that my topology could still meet the bandwidth requirement without it though, so I removed it from my circuit and all my analysis. 
+      
+      :markdown
+        ### DC Bias
+      
+      h5 Bias currents
+      p Like in Lab 1, I started setting bias points by choosing target currents and keeping bias stability in mind. For 100mW of power and a 15V Vcc, the current budget was around 6.6mA. To leave myself plenty of room, I allocated 2mA for each stage: 1.5mA for the cascode branch, 0.4mA for the emitter follower, and 0.1mA for the resistor bias network before the emitter follower.
+
+      p 
+        | Cascode:
+        | $$I_C = \SI{1.5}{\milli\ampere}$$
+        | $$g_m = \frac{I_C}{V_{th}} = 0.06$$
+        | $$r_{\pi} = \SI{2.92}{\kilo\ohm}$$
+      p 
+        | Emitter follower:
+        | $$I_C = \SI{0.4}{\milli\ampere}$$
+        | $$g_m = \frac{I_C}{V_{th}} = 0.0154$$
+        | $$r_{\pi} = \SI{11.4}{\kilo\ohm}$$
+
+      h5 Bias stability
+      p Also as in Lab 1, I determined that the emitter of both cascode stages should be at about 4V through emitter
+
+    .page.twocol
+      p degeneration to have good bias stability ($\pm 5\%$) through 2 variable Vbe drops ($\pm \SI{0.1}{\volt}$). Thus $$R_{A4} = R_{B4} = \frac{\SI{4}{\volt}}{\SI{0.0015}{\ampere}} \approx \SI{2.7}{\kilo\ohm}$$
+
+      p 
+        | From there, I calculated the other bias resistances by using the zeroth order model where Vbe = 0.6V.
+        | $$R_{A3} = R_{B3} = \frac{\SI{4.6}{\volt}}{\SI{0.0004}{\milli\ampere}} \approx \SI{12}{\kilo\ohm}$$
+        | $$R_{A1} = R_{B1} = \SI{56}{\kilo\ohm} \qquad R_{A2} = R_{B2} = \SI{100}{\kilo\ohm}$$
+        | Note that the last two resistances are set up so that the current through the resistance bias network is about 0.1mA. These resistances work nicely in that the emitter follower base current doesn't alter the divider significantly, and the input resistance is much less so the input isn't attenuated significantly.
+
+      h5 Setting the gain
+      p For setting the gain, I approximated each stage's gain as $g_m\cdot R_L$ when selecting resistances, and left a more detailed gain calculation for later. I first found that setting both gains to 25 for a total gain of 625 doesn't quite meet the output swing requirement. For $a_v=25$, $R_L = \frac{25}{0.06} = \SI{417}{\ohm}$. But then with 1.5mA of collector current, the output voltage's DC bias would be $15-417\cdot 0.0015 = \SI{14.4}{\volt}$, not enough for 2Vpp output swing. Therefore I chose load resistances of $$R_{A5} = \SI{200}{\ohm} \qquad R_{B5} = \SI{2}{\kilo\ohm}$$ for the first and second stage respectively, for an optimistic gain of 12 and 120 respectively. The large $R_{B5}$ biases the output at $\SI{12}{\volt}$ for up to 6Vpp output swing. Unfortunately, the two stage topology results in an actual gain of much less than the optimistic 1440, as we will see in section VI.
+
+      h5 Biasing the cascode upper BJT
+      p The final bias point to set was the base voltage for the upper BJT in each cascode stage (Q3 and Q6). These need to be biased such that the Vbe drop doesn't drive the lower transistor into saturation and such that the collector voltage has a large range before driving the top transistor into saturation. I aimed for a Vce of 1V for the lower transistor, which yields $$V_{BIAS}=4+1+0.6 = \SI{5.6}{\volt}$$. I used a simple resistor divider to generate this voltage and made sure to bypass it with a capacitor so the base would appear as incremental ground in AC.
+
+      h5 Capacitor selection
+      p My capacitor selection was largely governed by what components were at hand, large enough, and contributed the least parasitics to my circuit. The lower bandwidth limit was easy enough to hit that I just made sure to pick values on the order of microfarads and confirm that my short circuit constants agreed with my observations.
+      
+      h3 BJT Parameter measurement
+      p Before calculating OCTs, I measured several transistor parameters in order to model the device beta, output resistance, and capacitances more accurately. (See Table II.B)
+
+      p The $\beta$ measurement was carried over from Lab 1, but I ended up remeasuring the Early voltage and more detailed capacitance parameters for a better model. 
+
+      p For $c_\mu$ in particular, I used the provided MATLAB script to find CJC, VJC, and MJC, as shown in the following figure.
+      figure
+        img(src="/img/cmu.png")
+      p The resulting curve was helpful for accounting for changing $c_\mu$ for SPICE and OCT calculations.
+    .page
+      h3 OCT, SCT, & Gain Analysis
+      h4 OCT Analysis
+      p To calculate OCTs flexibly, I developed expressions for the resistances at the base, emitter, and collector of each BJT and used the generalized OCT formulas along with a MATLAB script to calculate all the OCTs. The following is a summary of these findings.
+
+      //- img(src="/img/oct.png") 
+      table.table.table-condensed.table-striped
+        tr
+          th Transistor
+          th $R_B$
+          th $R_E$
+          th $R_C$
+          th $n$
+          th $r_{no} (\Omega)$
+          th $c_n (pF)$
+          th $\tau_{no} (ns)$
+        tr
+          td(rowspan="2") Q1
+          td(rowspan="2") $R_S||R_{A1}||R_{A2}+r_b$
+          td(rowspan="2") $R_{A3}||(r_b||r_\pi^{CS})$
+          td(rowspan="2") 0
+          td 1
+          td 90.4
+          td 4.38
+          td 0.396
+        tr
+          td 2
+          td 1170
+          td 1.67
+          td 1.95
+        tr
+          td(rowspan="2") Q2
+          td(rowspan="2") $R_{A3}||(R_B^{Q1}+r_\pi^{EF})/(\beta+1)+r_b$
+          td(rowspan="2") 0
+          td(rowspan="2") $(r_b + r_\pi^{CS})/(\beta+1)$
+          td 3
+          td 249
+          td 4.38
+          td 1.09
+        tr
+          td 4
+          td 532
+          td 2.79
+          td 1.48
+        tr
+          td(rowspan="2") Q3
+          td(rowspan="2") $r_b$
+          td(rowspan="2") $r_o^{CS}$
+          td(rowspan="2") $R_{A5}||R_{B1}||R_{B2}$
+          td 5
+          td 18.5
+          td 4.38
+          td 0.0808
+        tr
+          td 6
+          td 397
+          td 1.67
+          td 0.662
+        tr
+          td(rowspan="2") Q4
+          td(rowspan="2") $R_{A5}||R_{B1}||R_{B2}+r_b$
+          td(rowspan="2") $R_{B3}||(r_b||r_\pi^{CS})$
+          td(rowspan="2") 0
+          td 7
+          td 72.1
+          td 4.38
+          td 0.316
+        tr
+          td 8
+          td 395
+          td 1.67
+          td 0.660
+        tr
+          td(rowspan="2") Q5
+          td(rowspan="2") $R_{B3}||(R_B^{Q4}+r_\pi^{EF})/(\beta+1)+r_b$
+          td(rowspan="2") 0
+          td(rowspan="2") $(r_b + r_\pi^{CS})/(\beta+1)$
+          td 9
+          td 245
+          td 4.38
+          td 1.08
+        tr
+          td 10
+          td 524
+          td 2.79
+          td 1.46
+        tr
+          td(rowspan="2") Q6
+          td(rowspan="2") $r_b$
+          td(rowspan="2") $r_o^{CS}$
+          td(rowspan="2") $R_{B5}$
+          td 11
+          td 18.5
+          td 4.38
+          td 0.0808
+        tr
+          td 12
+          td 2180
+          td 1.88
+          td 4.10
+        tr
+          th(colspan="4") Output capacitive load
+          td 13
+          td 1975
+          td 10
+          td 19.8
+      .twocol
+        p $$f_H = \frac{1}{2\pi\sum t_{no}} = \frac{1}{2\pi (\SI{32.6}{\nano\second})} = \boxed{\SI{4.80}{\mega\hertz}} $$
+
+        :markdown
+          ** Notes**
+          * Approximations were made when appropriate (e.g. a resistance was multiplied or divided by a factor of beta and largely outweighted by some other resistance)
+          * All the OCTs were based on measured resistances and $V_{CC}=\SI{14.6}{\volt}$
+          * As expected, the last time constant dominates because there is no output emitter follower.
+         
+        br
+        br
+        figure
+          img(src="/img/oct2.png" style="width: 60%; margin-left: 20%")
+          figcaption Required resistances when using general OCT formulas
+
+    .page.twocol
+      h4 SCT Analysis
+      p
+        | The SCTs were also calculated in MATLAB using the following expressions: 
+        | $$ r_{1s} = R_S||R_{A1}||R_{A2} = \SI{973}{\ohm} $$
+        | $$ r_{2s} = (r_b+r_\pi^{CS})/\beta||R_{A4} = \SI{19.4}{\ohm} $$
+        | $$ r_{3s} = R_{A5}||R_{B1}||R_{B2} = \SI{196}{\ohm} $$
+        | $$ r_{4s} = (r_b+r_\pi^{CS})/\beta||R_{B4} = \SI{19.4}{\ohm} $$
+        | $$ r_{5s} = R_{C1}||R_{C2} = \SI{2160}{\ohm} $$
+      p Then $$f_L = \frac{1}{2\pi}\sum\frac{1}{t_{ns}} = \boxed{\SI{29.8}{\kilo\hertz}}$$
+      h4 Gain Analysis
+      p To accurately calculate the gain, I split it into three parts per stage and calculated it in MATLAB.
+      h5 $a_{A1}$: Resistor divider gain
+      p This represents the gain of the resistor divider before the common emitter of each stage. $$a_{A1} = \frac{R_{A1}||R_{A2}||(r_b + r_\pi^{EF} + (\beta + 1) \cdot R_{A3})}{R_S + (R_{A1}||R_{A2}||(r_b + r_\pi^{EF} + (\beta + 1) \cdot R_{A3}))}$$
+      h5 $a_{A2}$: Emitter follower gain
+      p This represents the gain of the emitter follower. $$a_{A2} = \dfrac{(\beta+1) \cdot (R_{A3}||r_o^{EF})}{(R_{B}^{Q1} + r_\pi^{EF} + (\beta + 1) \cdot (R_{A3}||r_o^{EF}))}$$
+      h5 $a_{A2}$: Cascode gain
+      p This represents the gain of the cascode. $$a_{A3} = -\frac{\beta}{\beta+1}\frac{\beta\cdot R_{A5}}{R_{B}^{Q2} + r_\pi^{CS}}$$
+      br
+      h5 Total gain
+      p $$a_v = a_{A1} \cdot a_{A2} \cdot a_{A3} \cdot a_{B1} \cdot a_{B2} \cdot a_{B3} $$ $$a_v = 0.9721 \cdot 0.9935 \cdot -9.8167 \cdot 0.9944 \cdot 0.9939 \cdot -98.5890 $$$$a_v= \boxed{924} $$
+      p Most of the gain is lost in each cascode stage, with about $5/6$ of $g_m\cdot R_L$ due to the input resistance at the base of the common emitter transistor.
+
+      h3 Simulation
+      p From the 2N3906 parameters I measured, I created the SPICE BJT model shown in section II.C. After running an AC Analysis with the same input signal I would use in lab (4mVpp), I could find the upper and lower -3dB points:
+
+      figure
+        img(src="img/spice1.png")
+        figcaption The result of running an AC analysis and using cursors to find the upper -3dB bandwidth
+
+        
+      h3 Construction
+      h3 Results
+      h5 Midband Gain
+      h5 Lower -3dB Bandwidth
+      h5 Upper -3dB Bandwidth
+      h5 Output swing
+      h5 Power dissipation
+      h3 Takeaways
